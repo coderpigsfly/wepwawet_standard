@@ -12,7 +12,7 @@ network; only what really needs a large cloud model goes on to one.
 
 - **The standard:** [wepwawet-standard.md](wepwawet-standard.md): why voice is different, thirteen
   expectations (each with what went wrong and what to do), and the `x-wepwawet` section.
-- **A worked example:** the weather brain, an app that takes the words as said (expectation 11).
+- **A worked example:** [the weather brain](https://github.com/coderpigsfly/weather_brain), an app that takes the words as said (expectation 11).
 
 Version 1, October 2026. Expectation 13 and `weight` are drafts.
 

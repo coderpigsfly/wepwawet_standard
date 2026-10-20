@@ -232,7 +232,7 @@ x-wepwawet:
 
 ## An example: the weather brain
 
-The weather brain answers questions about the weather and the sun for one house. It's the simplest
+[The weather brain](https://github.com/coderpigsfly/weather_brain) answers questions about the weather and the sun for one house. It's the simplest
 kind of app: it understands words itself (expectation 11), so the voice system hands it the request
 exactly as heard and speaks its answer.
 
@@ -292,7 +292,7 @@ set in one place and shown in its spec, and everything about the house is in one
 
 ## Apps that follow it
 
-- **The weather brain** (answers, by its `/ask` door).
+- **[The weather brain](https://github.com/coderpigsfly/weather_brain)** (answers, by its `/ask` door).
 - **A speech app** (speech: speech-to-text and who spoke), from its version with `x-wepwawet`.
 
 An app without the section still works with Wepwawet Veil: every part stays open and the household
