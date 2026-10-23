@@ -1,0 +1,25 @@
+name: Proposed change
+description: "Suggest a change or addition to the standard"
+labels: [enhancement]
+body:
+  - type: input
+    id: section
+    attributes:
+      label: "Section"
+      description: "Which part of the standard, like \"x-wepwawet commands\" or \"Expectation 12\"."
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: "The change"
+      description: "What to add, remove or reword."
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: "Why"
+      description: "The case it covers, ideally from an app or voice system you work on."
+    validations:
+      required: true

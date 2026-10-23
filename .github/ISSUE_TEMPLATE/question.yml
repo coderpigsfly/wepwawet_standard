@@ -1,0 +1,15 @@
+name: Question
+description: "Ask how the standard applies to your app or voice system"
+labels: [question]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: "Your question"
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: "Your app or system"
+      description: "What it does, and the part of its OpenAPI description in question if you can share it."

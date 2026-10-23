@@ -2,9 +2,10 @@
 
 *What an app's API needs so it can be used by voice.*
 
-Version 1, October 2026. Written from taking four real apps through by voice (a chore app, a
+Version 2, October 2026. Written from taking five real apps through by voice (two chore apps, a
 history app, a calendar of religious celebrations, and the weather brain) with Wepwawet Veil, the
-house intent router. Each expectation below came up because an app didn't meet it, and says what
+house intent router. Version 2 adds the actions a person asks for (expectation 14), how long an app's
+data stays good (15), what sound an app takes in (16), an app's spoken name (1), and asking an app whether a request is its own (11). Each expectation below came up because an app didn't meet it, and says what
 went wrong. The router follows this paper, but the paper stands on its own: it's for anyone
 building an app that people will talk to through a voice assistant.
 
@@ -44,6 +45,8 @@ screens matter, what it can do for the house, where its people and projects are 
 
 **What to do.** Add an `x-wepwawet` section to your OpenAPI (or Swagger) document (the format is
 below). OpenAPI allows sections whose names start with `x-`; tools that don't know this one ignore it.
+Give the name the app is called by out loud in `spoken:` (a chore app called "Vikki"), which can
+differ from its title.
 
 ### 2. Say your version, and keep it current
 
@@ -56,7 +59,7 @@ every release. A framework's default (FastAPI's `0.1.0`) tells nobody anything.
 
 ### 3. List your things, each with an id and a name
 
-**Why.** People speak names ("the gutters", "Lisa"); APIs want ids. The assistant needs a list to
+**Why.** People speak names ("the gutters", "Mara"); APIs want ids. The assistant needs a list to
 match against, and the people in your app must be mapped to the people in the house.
 
 **What to do.** A `GET` for each kind of thing a person would name (people, projects, items), each
@@ -129,10 +132,15 @@ knows "Saturday", "tonight" and "in London" better than a router does.
 "what about Sunday?") and answers with a status and a sentence to speak. Say so in `x-wepwawet:
 answers:`, and mark the voice map and clean-up as not applying.
 
+A voice system that hasn't sent a request your way may still ask whether it's yours at all, before
+it goes to a cloud model. If your door can tell, take a parameter that says "only tell me whether
+it's yours", answer `not_mine` when the words aren't about your subject, and name the parameter in
+`answers: claim:`. Left out, a voice system sends you only what it has already decided is yours.
+
 ### 12. Get the house's people from the voice system
 
-**Why.** Each app names the same person its own way: a speaker-ID app by its profile ("Master"), a
-chore app by its member ("Master"), the people around them by what they call them ("Dad"). An app
+**Why.** Each app names the same person its own way: a speaker-ID app by its profile ("Chief"), a
+chore app by its member ("Chief"), the people around them by what they call them ("Dad"). An app
 that keeps its own copy of the household goes stale the day someone is added or renamed.
 
 **What to do.** Don't keep a copy: ask. The voice system keeps the one record of who's who, a row
@@ -158,6 +166,64 @@ A command reached only through the door of expectation 11 needs none of this: th
 words itself. The starter says which of an app's commands is meant, never which app: that stays
 the voice system's own job (its topic words).
 
+### 14. Declare what a person asks for
+
+**Why.** A command is what the app can do; what a person asks for is often a few commands in a row.
+"Rename the gutters to clean the gutters" means: list the chores, find the one meant, ask for the new
+name if it wasn't said, read the chore as it is now, send it back with the new name, and say so.
+Without a way to say that, every voice system builds it by hand for every app. Taking five apps
+through, 20 of the 21 things built by hand had one of four shapes.
+
+**What to do.** In `x-wepwawet: actions:`, give each thing a person asks for its starter and its
+shape, from its parts:
+
+| Shape | Parts | For |
+|---|---|---|
+| change | `target`, `value`, `send` (if the app wants the whole item back), `command`, `says` | rename, change a date |
+| act | `target`, `confirm`, `command`, `says` | delete, mark done |
+| read | `target`, `says` (the item's fields said back) | "when is it due?" |
+| list | `from`, `pick` (by a field, by date: the next one, the day said), `says` | "what's next?", "who was born today?" |
+
+- `target` is one item of a list, found by what was said: the voice system matches it, asks which
+  when two fit, and checks first when it isn't sure.
+- `confirm: {always: true}` asks first even when it's sure. Use it for anything that can't be undone.
+- `value: read_back:` says a value back before it's sent ("Rename Get to Me?").
+- Anything that fits no shape stays the voice system's own: the household builds it.
+
+An app that has no section can still be described: the voice system writes a **compliant copy** of
+the app's document with the section filled in, and keeps it beside the app's own, which is never
+changed. `source:` says who wrote it and from which version.
+
+### 15. Say how long your data stays good
+
+**Why.** Some data changes the moment someone acts on it (a chore list), some once a day (what
+happened on this day in history), some once a year (a calendar of celebrations), and some by the
+minute (the weather). A voice system that doesn't know holds old data, or asks again for no reason.
+
+**What to do.** Say it in `x-wepwawet: data:`:
+
+- `kind: record`: kept by the app; read it live, never hold a copy.
+- `kind: transient`, with `pace: slow` (it changes once a day or less, up to a year) or `pace:
+  fast`, and `hold_seconds`: how long a copy stays good.
+
+### 16. Say what sound you take in
+
+**Why.** An app that listens takes in more than speech. The sound around it can be told apart by
+type, and an app that says which types it handles lets the voice system send it the right sound and
+leave the rest.
+
+**What to do.** If your app takes in sound, say so in `x-wepwawet: hears:`, with its frequency range
+and the acoustic types it handles, by these standard names:
+
+- **Temporal:** `continuous` (steady: machinery, HVAC, constant traffic), `intermittent` (drops to
+  the background and restarts: passing trains, overhead flights), `impulsive` (sudden, sharp, loud: a
+  door slamming), `low_frequency` (persistent rumbles and hums, typically under 100 Hz).
+- **Propagation path:** `airborne` (through the air: voices, barking, stereos), `structural` (through
+  floors, walls and pipes: footsteps upstairs, plumbing).
+- **Spectral color:** `white` (equal energy at every audible frequency, 20 Hz to 20 kHz), `pink`
+  (3 dB less per octave: heavy rain, waterfalls), `brown` or `red` (6 dB less per octave: distant
+  thunder), and `blue`, `violet` and `gray` (higher frequencies, or adjusted for the ear).
+
 ## The `x-wepwawet` section
 
 Every part, shown once (one app wouldn't have them all: a speech app has no events and no `/ask`
@@ -165,9 +231,15 @@ door):
 
 ```yaml
 x-wepwawet:
-  version: 1                  # this standard's version
+  version: 2                  # this standard's version
   title: Hearing              # how the voice system names the app (else the spec's info: title:)
+  spoken: Hearing             # what it's called out loud (expectation 1)
   role: speech                # what it is: speech | answers | app
+  data: {kind: record}        # how long its data stays good (expectation 15)
+  hears:                      # the sound it takes in (expectation 16)
+    range: human voice        #   its frequency range
+    temporal: [continuous, intermittent]
+    path: [airborne]
   tabs:                       # which parts apply (true) or not (false); left out: true
     commands: true            #   its own commands, from this document
     voice_map: false          #   things said to it, each calling one of its commands
@@ -205,6 +277,7 @@ x-wepwawet:
     door: GET /ask
     said: text
     context: context
+    claim: claim              #   optional: the parameter that asks "is this yours at all?" (not_mine if not)
   commands:                   # each command a person calls by voice (expectation 13; a draft)
     POST /items:
       starts: [add, create, new]   # the words a request for it opens with
@@ -215,6 +288,14 @@ x-wepwawet:
         who: assignee         #   a person in the house (expectation 12)
         group: listId         #   its group (expectation 4)
         where: room           #   a place
+  actions:                    # what a person asks for (expectation 14)
+    rename:
+      starts: [rename]
+      target: {from: GET /items, find: {field: title, until: [to]}}
+      value: {need: new_name, after: [to], question: "What should I call it?"}
+      send: {whole: "GET /items/{id}", set: {title: new_name}}
+      command: "POST /items/{id}"
+      says: {lines: ["{item} is now {new_name}."]}
 ```
 
 - A part marked `false` is shown as not applying, never hidden, so every app's layout is the same.
@@ -240,11 +321,13 @@ exactly as heard and speaks its answer.
 
 ```yaml
 x-wepwawet:
-  version: 1
+  version: 2
   title: Weather brain
+  spoken: the weather
   role: answers
+  data: {kind: transient, pace: fast}
   tabs: {commands: true, voice_map: false, clean_up: false, lists: false, options: false}
-  answers: {door: GET /ask, said: text, context: context}
+  answers: {door: GET /ask, said: text, context: context, claim: claim}
   commands:
     GET /weather:
       starts: ["what's the weather", will it rain, "how's the weather", forecast]
@@ -259,9 +342,13 @@ x-wepwawet:
 
 - `role: answers` and `answers:` mean: send it the words, don't pick a command. There's one door,
   `GET /ask`, taking `text` (the request as said) and `context` (earlier requests, newest first).
+- `claim: claim`: a voice system that hasn't routed a request to the brain can ask
+  `GET /ask?text=...&claim=true`, and the brain answers `{"status": "not_mine", "reason": "not_weather"}` unless the words
+  are about the weather or the sun ("Tell me a joke" isn't; "Is it nice out?" is).
 - `voice_map: false` and `clean_up: false`: there's nothing to map words onto and nothing to strip;
   the brain reads "Do I need an umbrella on Saturday?" itself.
 - `lists: false`, `options: false`: no people or projects to match, no knobs.
+- `data:` the weather changes by the hour: a voice system may hold an answer only briefly.
 - `commands:` is for a voice system that calls commands directly. `when` is a standard name; which
   sun time is asked (`ask`) isn't one, so it keeps the brain's own name.
 
@@ -290,13 +377,58 @@ had its town, timezone, forecast grid and climate normals written into its code.
 set in one place and shown in its spec, and everything about the house is in one file,
 `house.json`, that never leaves the house; a new install starts from `house.example.json`.
 
+## An example: a chore app's compliant copy
+
+A chore app with no section of its own, as the voice system wrote it (expectation 14). The app's own
+document is untouched; this section sits in the copy beside it. Of the chore app's four things built
+by hand, all four are actions here.
+
+```yaml
+x-wepwawet:
+  version: 2
+  title: Chores
+  spoken: Vikki
+  source: {written_by: Wepwawet Veil, from: "Chores v2.7.1", pushed_back: [delete, find, rename, rename_project]}
+  data: {kind: record}
+  lists:
+    people: {from: "GET /projects/{id}/projectusers", id: id, name: name, house: people}
+    project: {from: GET /projects, id: id, name: title}
+  actions:
+    rename:
+      starts: [rename, change the name of]
+      target: {from: GET /tasks, find: {field: title, until: [to, as], last: true}}
+      confirm: {}
+      value: {need: new_name, after: [to, as], question: "What should I call it?",
+              read_back: {always: true, question: "Rename {item} to {new_name}?"}}
+      send: {whole: "GET /tasks/{id}", set: {title: new_name}}
+      command: "POST /tasks/{id}"
+      says: {lines: ["{item} is now {new_name}."]}
+    delete:
+      starts: [delete]
+      target: {from: GET /tasks, find: {field: title, last: true}}
+      confirm: {always: true, question: "It can't be undone. Delete {item}?"}
+      command: "DELETE /tasks/{id}"
+      says: {lines: ["{item} is deleted."]}
+    find:
+      starts: [find, when is, "what's the due date"]
+      target: {from: GET /tasks, find: {field: title, last: true}}
+      confirm: {}
+      says: {lines: ["{item} is due {due}."], fields: {due: due_date}, empty_lines: ["{item} has no due date."]}
+```
+
+**What it took:** nothing from the app. The voice system read its rules for the app (the things
+the household had built by hand) and wrote each one that had a shape as an action. Across five apps
+taken through, 20 of 21 had one; the one left over says a single item at random.
+
 ## Apps that follow it
 
 - **[The weather brain](https://github.com/coderpigsfly/weather_brain)** (answers, by its `/ask` door).
 - **A speech app** (speech: speech-to-text and who spoke), from its version with `x-wepwawet`.
+- **A chore app, a history app and a calendar**, by compliant copies their voice system wrote
+  (expectation 14).
 
 An app without the section still works with Wepwawet Veil: every part stays open and the household
-fills it in by hand. The chore app, the history app and the calendar were taken through that way;
+fills it in by hand, and Veil writes a compliant copy from what the household built. The chore app, the history app and the calendar were taken through that way;
 the chore app's shortfalls are the examples in expectations 5 to 10.
 
 ## Later versions

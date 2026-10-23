@@ -10,11 +10,11 @@ section ignore it.
 Requests the house's own apps can answer are answered there, quickly and on the house's own
 network; only what really needs a large cloud model goes on to one.
 
-- **The standard:** [wepwawet-standard.md](wepwawet-standard.md): why voice is different, thirteen
+- **The standard:** [wepwawet-standard.md](wepwawet-standard.md): why voice is different, sixteen
   expectations (each with what went wrong and what to do), and the `x-wepwawet` section.
 - **A worked example:** [the weather brain](https://github.com/coderpigsfly/weather_brain), an app that takes the words as said (expectation 11).
 
-Version 1, October 2026. Expectation 13 and `weight` are drafts.
+Version 2, October 2026: adds actions (expectation 14), data life (15), the sound an app takes in (16), an app's spoken name, and asking an app whether a request is its own (11). Expectation 13 and `weight` are drafts.
 
 ## Following it
 
@@ -22,6 +22,12 @@ Version 1, October 2026. Expectation 13 and `weight` are drafts.
 2. Add an `x-wepwawet` section to your app's OpenAPI document (format and an example in the
    standard).
 3. Put your real version in `info: version:` and change it with every release.
+
+## About this project
+
+Built on the author's own code base, with AI-assisted extensions and clean-up.
+The documentation was written with AI and proofread by a second AI, under the
+author's direction and review.
 
 ## License
 
